@@ -70,7 +70,7 @@ class Youtube:
         '''
         self.channel_name = re.search(r'"ownerChannelName":"(.*?)"',self.html).groups()[0]
         self.channel_url = re.search(r'"ownerProfileUrl":"(.*?)"',self.html).groups()[0]
-        regex_group = re.findall(r'"videoDetails":.*?\}',html)[0]
+        regex_group = re.findall(r'"videoDetails":.*?\}',self.html)[0]
         self.title = re.search(r'"videoId":".*?","title":"(.*?)"',regex_group).groups()[0]
         self.length = re.search(r'"lengthSeconds":"(.*?)"',regex_group).groups()[0]
         self.views = re.search(r'"viewCount":"(.*?)"',self.html).groups()[0]
