@@ -133,7 +133,7 @@ class Youtube:
                 size = stream['contentLength']
             except:
                 size = 0
-            if round(stream['approxDurationMs']/1000) == self.length:
+            if round(int(stream['approxDurationMs'])/1000) == int(self.length):
                 formats.append(Format(self.title,{'itag':itag,'mimeType':Mime,'vcodec':vcodec,'acodec':acodec,'fps':fps,'abr':abr,'quality':quality,'url':url,'size':size,'adaptive':adaptive,'progressive':progressive}))
         return formats
         
