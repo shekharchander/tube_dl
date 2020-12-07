@@ -1,0 +1,13 @@
+setup.py
+tube_dl/__init__.py
+tube_dl/__main__.py
+tube_dl/captions.py
+tube_dl/comments.py
+tube_dl/decipher.py
+tube_dl/extras.py
+tube_dl/formats.py
+tube_dl.egg-info/PKG-INFO
+tube_dl.egg-info/SOURCES.txt
+tube_dl.egg-info/dependency_links.txt
+tube_dl.egg-info/requires.txt
+tube_dl.egg-info/top_level.txt
