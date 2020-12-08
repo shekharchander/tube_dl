@@ -16,7 +16,6 @@ import json
 import re
 from tube_dl.decipher import Decipher
 from tube_dl.formats import Format,list_streams
-from tube_dl.captions import Caption
 import time 
 import os
 from urllib.parse import unquote
@@ -38,47 +37,55 @@ class Youtube:
                 vid = i
                 break
         self.url = 'https://youtube.com/watch?v='+vid
-        html = unquote(requests.get(self.url,headers = headers).text)
-        self.algo_js = self.get_js(html)
-
-        raw_itags = ''
-        self.html = re.search(r'<script.*?>.*?responseContext.*?</script>',html).group()
-        for i in re.findall(r'\[(\{.itag.*?\})\]',self.html):
-            raw_itags += i+','
-        if raw_itags == '':
-            try:
-                self.html = self.html.replace('\\"','"')
-                for i in re.findall(r'\[(\{.itag.*?\})\]',self.html):
-                    raw_itags += i+','
-            except:
-                raise Exception("Not a Valid Youtube ID.")
-        raw_itags = '['+raw_itags.replace('\\\\"',"'").rsplit(',',1)[0]+']'
-        self.stream_data = json.loads(raw_itags)
-        self.video_details()
+        self.html = unquote(requests.get(f'https://www.youtube.com/get_video_info?html5=1&video_id={vid}&el=detailpage',headers = headers).text)
+        for j in re.findall(r'=(\{.*?)&',self.html):
+            j = j.replace('+',' ')
+            if 'streamingData' in j:
+                json_data = json.loads(j)
+            else:
+                extra_details = json.loads(j)
+        primary_details = json_data['videoDetails']
+        details = extra_details['contents']['twoColumnWatchNextResults']['results']['results']['contents']
+        other_details = details[1]["videoSecondaryInfoRenderer"]
+        vid_details = details[0]["videoPrimaryInfoRenderer"]
+        self.description = ' '.join([i['text'] for i in other_details['description']['runs']])
+        try:
+            self.metadata = other_details["metadataRowContainer"]["metadataRowContainerRenderer"]['rows']
+            meta = dict({'Thumbnail':primary_details['thumbnail']['thumbnails'][-1]['url']})
+            for i in self.metadata:
+                if 'metadataRowRenderer' in i.keys():
+                    m = i['metadataRowRenderer']
+                    meta[m['title']['simpleText']] = ','.join([h['simpleText'] for h in m['contents']])
+        except:
+            self.meta = None
+        self.is_live = primary_details["isLiveContent"]
+        self.keywords = primary_details['keywords']
+        self.channel_id = primary_details['channelId']
+        self.title = primary_details['title']
+        self.length = primary_details['lengthSeconds']
+        self.upload_date = vid_details["dateText"]["simpleText"].replace(' ','-')
+        self.rating = primary_details['averageRating']
+        self.is_live = primary_details["isLiveContent"]
+        self.channel_name = primary_details["author"]
+        if 'captions' in json_data.keys():
+            self.caption_data = json_data['captions']["playerCaptionsTracklistRenderer"]["captionTracks"]
+        else:
+            self.caption_data = None
+        self.views = vid_details["viewCount"]["videoViewCountRenderer"]["viewCount"]["simpleText"]
+        self.likes,self.dislikes = map(int,vid_details["sentimentBar"]["sentimentBarRenderer"]["tooltip"].replace(',','').split('/'))
+        self.streamingData = list()
+        for k in json_data['streamingData'].keys():
+            if type(json_data['streamingData'][k]) == list:
+                for stream in json_data['streamingData'][k]:
+                    self.streamingData.append(stream)
+        self.thumbnail_url = f'http://i.ytimg.com/vi/{vid}/maxresdefault.jpg'
+        self.algo_js = None
         self.formats = list_streams(self.Formats())
-    def get_js(self,html):
+    def get_js(self):
+        html = unquote(requests.get(self.url).text)
         js_file = requests.get('https://youtube.com'+re.search(r'"jsUrl":"(.*?)"',html).groups()[0]).text
         return Decipher(js_file,process=True).get_full_function()
-    def video_details(self,html:str = None):
-        '''
-        Contains:
-            All the MetaData about the video
-        
-        Params:
-            html:str - Takes the html file that contains the metadata
-        
-        '''
-        self.channel_name = re.search(r'"ownerChannelName":"(.*?)"',self.html).groups()[0]
-        self.channel_url = re.search(r'"ownerProfileUrl":"(.*?)"',self.html).groups()[0]
-        regex_group = re.findall(r'"videoDetails":.*?\}',self.html)[0]
-        self.title = re.search(r'"videoId":".*?","title":"(.*?)"',regex_group).groups()[0]
-        self.length = re.search(r'"lengthSeconds":"(.*?)"',regex_group).groups()[0]
-        self.views = re.search(r'"viewCount":"(.*?)"',self.html).groups()[0]
-        self.upload_date = re.search(r'"uploadDate":"(.*?)"',self.html).groups()[0]
-        try:
-            self.description = re.search(r'"description":\{"simpleText":"(.*?)"',self.html).groups()[0]
-        except:
-            self.description = re.search(r'"shortDescription":"(.*?)"',self.html).groups()[0]
+    
     def Formats(self,stream_data:list() = None):
         '''
         Returns:
@@ -89,7 +96,7 @@ class Youtube:
         '''
         formats = list()
         if stream_data == None:
-            stream_data = self.stream_data
+            stream_data = self.streamingData
         for stream in stream_data:
             itag = stream['itag']
             Mime,Codecs = stream['mimeType'].replace("'",'').split(';')
@@ -114,11 +121,9 @@ class Youtube:
             except:
                 abr = stream['bitrate']
             if 'signatureCipher' in str(stream):
-                try:
-                    signature,url = unquote(stream['signatureCipher']).split('&sp=sig&')
-                except:
-                    signature,url = stream['signatureCipher'].split('\\u0026sp=sig\\u0026')
-
+                if self.algo_js is None:
+                    self.algo_js = self.get_js()   
+                signature,url = stream['signatureCipher'].split('&sp=sig&')
                 deciphered_signature = Decipher().deciphered_signature(signature = signature.split('s=')[-1],algo_js=self.algo_js)
                 url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
             else:
@@ -133,8 +138,9 @@ class Youtube:
                 size = stream['contentLength']
             except:
                 size = 0
-            if round(int(stream['approxDurationMs'])/1000) == int(self.length):
-                formats.append(Format(self.title,{'itag':itag,'mimeType':Mime,'vcodec':vcodec,'acodec':acodec,'fps':fps,'abr':abr,'quality':quality,'url':url,'size':size,'adaptive':adaptive,'progressive':progressive}))
+            if self.meta is None:
+                self.meta = self.description
+            formats.append(Format(self.title,self.meta,self.thumbnail_url,{'itag':itag,'mimeType':Mime,'vcodec':vcodec,'acodec':acodec,'fps':fps,'abr':abr,'quality':quality,'url':url,'size':size,'adaptive':adaptive,'progressive':progressive}))
         return formats
         
 class Playlist:

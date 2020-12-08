@@ -4,8 +4,10 @@ import requests
 from tube_dl.extras import Convert
 headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36','referer':'https://youtube.com'}
 class Format:
-    def __init__(self,title,stream_data:dict = None):
+    def __init__(self,meta,title,thumbnail,stream_data:dict):
+        self.meta = meta
         self.data = stream_data
+        self.thumbnail = thumbnail
         self.title = title
         self.itag = self.data['itag']
         self.mime = self.data['mimeType']
@@ -58,9 +60,8 @@ class Format:
                 if onprogress != None:
                     onprogress(chunk = data, bytes_done = bytes_done, total_bytes = total_size_in_bytes)
         f.close()
-        
         if convert is not None:
-            Convert(final_path,convert.split('.')[0],Type)
+            Convert(self.meta,final_path,self.thumbnail,convert.split('.')[0],Type)
     def __repr__(self):
         return f'<Format : itag={self.itag}, mimeType={self.mime}, size={self.size}, acodec={self.acodec}, vcodec={self.vcodec}, fps={self.fps}, quality={self.quality}, abr={self.abr}, progressive={self.progressive}, adaptive={self.adaptive} >'
 class list_streams:
