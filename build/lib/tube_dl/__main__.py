@@ -37,27 +37,23 @@ class Youtube:
                 vid = i
                 break
         self.url = 'https://youtube.com/watch?v='+vid
-        self.html = unquote(requests.get(f'https://www.youtube.com/get_video_info?html5=1&video_id={vid}&el=detailpage',headers = headers).text)
-        for j in re.findall(r'=(\{.*?)&',self.html):
-            j = j.replace('+',' ')
-            if 'streamingData' in j:
-                json_data = json.loads(j)
-            else:
-                extra_details = json.loads(j)
+        extra_details = ''
+        while True:
+            self.html = unquote(requests.get(f'https://www.youtube.com/get_video_info?html5=1&video_id={vid}&el=detailpage',headers = headers).text)
+            for j in re.findall(r'=(\{.*?)&',self.html):
+                j = j.replace('+',' ')
+                if 'streamingData' in j:
+                    json_data = json.loads(j)
+                else:
+                    extra_details = json.loads(j)
+            if extra_details != '':
+                break
         primary_details = json_data['videoDetails']
         details = extra_details['contents']['twoColumnWatchNextResults']['results']['results']['contents']
         other_details = details[1]["videoSecondaryInfoRenderer"]
         vid_details = details[0]["videoPrimaryInfoRenderer"]
         self.description = ' '.join([i['text'] for i in other_details['description']['runs']])
-        try:
-            self.metadata = other_details["metadataRowContainer"]["metadataRowContainerRenderer"]['rows']
-            meta = dict({'Thumbnail':primary_details['thumbnail']['thumbnails'][-1]['url']})
-            for i in self.metadata:
-                if 'metadataRowRenderer' in i.keys():
-                    m = i['metadataRowRenderer']
-                    meta[m['title']['simpleText']] = ','.join([h['simpleText'] for h in m['contents']])
-        except:
-            self.meta = None
+        self.category = json_data["microformat"]["playerMicroformatRenderer"]["category"]
         self.is_live = primary_details["isLiveContent"]
         self.keywords = primary_details['keywords']
         self.channel_id = primary_details['channelId']
@@ -78,13 +74,33 @@ class Youtube:
             if type(json_data['streamingData'][k]) == list:
                 for stream in json_data['streamingData'][k]:
                     self.streamingData.append(stream)
-        self.thumbnail_url = f'http://i.ytimg.com/vi/{vid}/maxresdefault.jpg'
+        self.thumbnail_url = f'https://i.ytimg.com/vi/{vid}/maxresdefault.jpg'
+        try:
+            self.metadata = other_details["metadataRowContainer"]["metadataRowContainerRenderer"]['rows']
+            meta = dict({'uploaded':self.upload_date})
+            for i in self.metadata:
+                if 'metadataRowRenderer' in i.keys():
+                    m = i['metadataRowRenderer']
+                    meta[m['title']['simpleText']] = ','.join([h['simpleText'] for h in m['contents']])
+        except:
+            self.meta = None
         self.algo_js = None
         self.formats = list_streams(self.Formats())
-    def get_js(self):
-        html = unquote(requests.get(self.url).text)
-        js_file = requests.get('https://youtube.com'+re.search(r'"jsUrl":"(.*?)"',html).groups()[0]).text
-        return Decipher(js_file,process=True).get_full_function()
+    def get_js(self,error=False):
+        file_name = __file__.rsplit('\\',1)[0]+'\\yt.js'
+        try:
+            js_data = open(file_name,'rb').read().decode('utf-8')
+        except:
+            js_data = open(file_name,'w').write('')
+            js_data = open(file_name,'rb').read().decode('utf-8')
+        if js_data == '' or float(js_data.split('||')[0]) > time.time()-3600000 or error == True:
+            html = unquote(requests.get(self.url).text)
+            js_file = requests.get('https://youtube.com'+re.search(r'"jsUrl":"(.*?)"',html).groups()[0]).text
+            data = Decipher(js_file,process=True).get_full_function()
+            open(file_name,'wb').write(f'{time.time()}||{data}'.encode('utf-8'))
+        else:
+            data =  js_data.split('||')[-1]
+        return data
     
     def Formats(self,stream_data:list() = None):
         '''
@@ -124,10 +140,11 @@ class Youtube:
                 if self.algo_js is None:
                     self.algo_js = self.get_js()   
                 signature,url = stream['signatureCipher'].split('&sp=sig&')
-                deciphered_signature = Decipher().deciphered_signature(signature = signature.split('s=')[-1],algo_js=self.algo_js)
+                deciphered_signature = Decipher().deciphered_signature(signature = signature.split('s=')[-1].replace('%253D','=').replace('%3D','='),algo_js=self.algo_js)
                 url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
             else:
                 url = stream['url'].replace('\\u0026','&')
+            url = url+'&rbuf=0'
             try:
                 fps = stream['fps']
                 quality = stream['qualityLabel']
@@ -138,9 +155,11 @@ class Youtube:
                 size = stream['contentLength']
             except:
                 size = 0
-            if self.meta is None:
-                self.meta = self.description
-            formats.append(Format(self.title,self.meta,self.thumbnail_url,{'itag':itag,'mimeType':Mime,'vcodec':vcodec,'acodec':acodec,'fps':fps,'abr':abr,'quality':quality,'url':url,'size':size,'adaptive':adaptive,'progressive':progressive}))
+            if self.meta is not None:
+                description = self.meta
+            else:
+                description = self.description
+            formats.append(Format(self.category,description,self.title,{'itag':itag,'mimeType':Mime,'vcodec':vcodec,'acodec':acodec,'fps':fps,'abr':abr,'quality':quality,'url':url,'size':size,'adaptive':adaptive,'progressive':progressive}))
         return formats
         
 class Playlist:
@@ -166,7 +185,6 @@ class Playlist:
         self.IDs = re.findall(regex,html)
         if len(self.IDs) == 0:
             raise  Exception('Not a Youtube Playlist.')
-        print('Gathering Video IDs')
         try:
             total_count = int(re.search(r'"text":"([0-9]*)"',html).groups()[0])
         except:

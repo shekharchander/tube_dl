@@ -1,13 +1,13 @@
 import string
 import os
-import requests
+import requests,time
 from tube_dl.extras import Convert
 headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36','referer':'https://youtube.com'}
 class Format:
-    def __init__(self,meta,title,thumbnail,stream_data:dict):
-        self.meta = meta
+    def __init__(self,category,description,title,stream_data:dict):
         self.data = stream_data
-        self.thumbnail = thumbnail
+        self.category = category
+        self.description = description
         self.title = title
         self.itag = self.data['itag']
         self.mime = self.data['mimeType']
@@ -45,23 +45,23 @@ class Format:
         if file_name == None:
             file_name = self.title
         file_name = self.safe_filename(file_name)
-        Type,extension = self.mime.split('/')
+        _,extension = self.mime.split('/')
         if path is None:
             path = os.getcwd()
         final_path = f'{path}\\{file_name}.{extension}'
         response = requests.get(url, stream = True,headers = headers)
         total_size_in_bytes= int(response.headers.get('content-length', 0))
-        block_size = total_size_in_bytes//200
+        block_size = 1024
         bytes_done = 0
-        with open(final_path, 'wb') as f:
-            for data in response.iter_content(block_size):
-                f.write(data)
-                bytes_done += block_size
-                if onprogress != None:
-                    onprogress(chunk = data, bytes_done = bytes_done, total_bytes = total_size_in_bytes)
+        f = open(final_path, 'wb')
+        for data in response.iter_content(block_size):
+            f.write(data)
+            bytes_done += block_size
+            if onprogress != None:
+                onprogress(bytes_done = bytes_done, total_bytes = total_size_in_bytes)
         f.close()
         if convert is not None:
-            Convert(self.meta,final_path,self.thumbnail,convert.split('.')[0],Type)
+            Convert(final_path,self.category,self.description,convert.split('.')[0])
     def __repr__(self):
         return f'<Format : itag={self.itag}, mimeType={self.mime}, size={self.size}, acodec={self.acodec}, vcodec={self.vcodec}, fps={self.fps}, quality={self.quality}, abr={self.abr}, progressive={self.progressive}, adaptive={self.adaptive} >'
 class list_streams:
