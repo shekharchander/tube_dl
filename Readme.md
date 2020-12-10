@@ -1,44 +1,26 @@
-# tube_dl
-Another Simple Youtube video downloader for Python.
-A Modular approach to bypass and download Youtube Videos and Playlist from Youtube.
+# What is this ?
+Tube_dl is a Simple Youtube video downloader for Python.
+A Modular approach to bypass and download Youtube Videos and Playlist from Youtube using python.
 
   ```python 
-  >>>pip install tube_dl
+  >>> pip install tube_dl
   ```
 
-Features:
-
+# Features:
+## New Feature (v3.0.1) :
+    when you convert youtube video to mp3, the module automatically adds metadata about audio from Spotify. Like album art, singer name, album artists, track_number, etc.
+## Existing Features
 1. Convert videos[coming soon] and audios to any format. For ex: 'webm' -> 'mp3'. (Requires Moviepy - pip install moviepy)
-2. Merge Audio and Video [coming soon]
 
 
-Usage:
+# Usage:
 
 ```python
 >>>from tube_dl import Youtube
 >>>yt = Youtube("https://youtube.com/watch?v=R2j46bHm6zw&list=RDAMVMd4HYhxlsj5k")
 >>>yt.formats.first().download()
 ```
-
-## Printing Information about the Video:
-
-You can print the info or use them anywhere in your code. Here are the list of Information available:
-  
-   ```python
-   
-  >>> yt.title : Returns the title of the video
-  >>> yt.views : Return total views
-  >>> yt.channel_name : Returns the name of the channel
-  >>> yt.channel_url : Returns url of the channel
-  >>> yt.length : Returns the total length of the Youtube Video (in seconds)
-  >>> yt.upload_date : Returns the upload date of the video
-  >>> yt.description : Return long description if available otherwise, short description
-  ```
-   * More options coming soon........
- 
-   
-  
-## what is formats?
+# what is formats?
 
 formats is a class containing all the Youtube streams.
 
@@ -51,9 +33,27 @@ You can also see all the streams by :
 When you use Formats(), a list of all streams of format class is returned.
 When you use formats, a list of all streams of list_formats class is returned.
 
+# Other Details
+## Printing Information about the Video:
+
+You can print the info or use them anywhere in your code. Here are the list of Information available:
+  
+   ```python
+   
+  >>> yt.title : Returns the title of the video
+  >>> yt.views : Return total views
+  >>> yt.channel_name : Returns the name of the channel
+  >>> yt.channel_url : Returns url of the channel
+  >>> yt.length : Returns the total length of the Youtube Video (in seconds)
+  >>> yt.upload_date : Returns the upload date of the video
+  >>> yt.description : Return long description
+  ```
+   * More options coming soon........
+ 
+
 ## using filter_by option:
   Returns : list(list_formats)
-  You can filter the formats according to the itag, adaptive, progressive, fps, quality, only_audio.
+  You can filter the formats according to the itag, adaptive, progressive, fps, quality, only_audio, no_audio.
   Example:
   ```python
   >>>Youtube("https://youtube.com/watch?v=R2j46bHm6zw&list=RDAMVMd4HYhxlsj5k").streams.filter_by(only_audio=True)
@@ -92,7 +92,7 @@ Params :
  >>> filename = Youtube("https://youtube.com/watch?v=R2j46bHm6zw&list=RDAMVMd4HYhxlsj5k").formats.safe_filename()
   ```
  
-## Playlist 
+## Working with Playlist 
 Working with Playlists in Youtube:
 
 
