@@ -37,7 +37,8 @@ class Youtube:
                 vid = i
                 break
         self.url = 'https://youtube.com/watch?v='+vid
-        extra_details = ''
+        headers['referer'] = self.url
+        extra_details,json_data = ['','']
         while True:
             self.html = unquote(requests.get(f'https://www.youtube.com/get_video_info?html5=1&video_id={vid}&el=detailpage',headers = headers).text)
             for j in re.findall(r'=(\{.*?)&',self.html):
@@ -46,8 +47,10 @@ class Youtube:
                     json_data = json.loads(j)
                 else:
                     extra_details = json.loads(j)
-            if extra_details != '':
+            if extra_details != '' and json_data != '':
                 break
+            else:
+                print('Youtube Didn\'t send any data. Trying again')
         primary_details = json_data['videoDetails']
         details = extra_details['contents']['twoColumnWatchNextResults']['results']['results']['contents']
         other_details = details[1]["videoSecondaryInfoRenderer"]
@@ -55,7 +58,10 @@ class Youtube:
         self.description = ' '.join([i['text'] for i in other_details['description']['runs']])
         self.category = json_data["microformat"]["playerMicroformatRenderer"]["category"]
         self.is_live = primary_details["isLiveContent"]
-        self.keywords = primary_details['keywords']
+        try:
+            self.keywords = primary_details['keywords']
+        except:
+            self.keywords = None
         self.channel_id = primary_details['channelId']
         self.title = primary_details['title']
         self.length = primary_details['lengthSeconds']
@@ -77,11 +83,14 @@ class Youtube:
         self.thumbnail_url = f'https://i.ytimg.com/vi/{vid}/maxresdefault.jpg'
         try:
             self.metadata = other_details["metadataRowContainer"]["metadataRowContainerRenderer"]['rows']
-            meta = dict({'uploaded':self.upload_date})
+            self.meta = dict({'uploaded':self.upload_date})
             for i in self.metadata:
                 if 'metadataRowRenderer' in i.keys():
                     m = i['metadataRowRenderer']
-                    meta[m['title']['simpleText']] = ','.join([h['simpleText'] for h in m['contents']])
+                    try:
+                        self.meta[m['title']['simpleText']] = ','.join([h['simpleText'] for h in m['contents']])
+                    except:
+                        self.meta[m['title']['simpleText']] = ','.join([h['text'] for h in m['contents'][0]['runs']])
         except:
             self.meta = None
         self.algo_js = None
@@ -140,6 +149,7 @@ class Youtube:
                 if self.algo_js is None:
                     self.algo_js = self.get_js()   
                 signature,url = stream['signatureCipher'].split('&sp=sig&')
+                print(signature)
                 deciphered_signature = Decipher().deciphered_signature(signature = signature.split('s=')[-1].replace('%253D','=').replace('%3D','='),algo_js=self.algo_js)
                 url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
             else:
