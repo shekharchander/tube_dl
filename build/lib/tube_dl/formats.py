@@ -24,7 +24,7 @@ class Format:
         valid_chars = "-_() %s%s" % (string.ascii_letters, string.digits)
         filename = ''.join(char for char in name if char in valid_chars)
         return filename
-    def download(self, onprogress = None, convert:str = None, path = None, file_name = None, ):
+    def download(self, force_filename = False ,onprogress = None, convert:str = None, path = None, file_name = None,skip_existing=False):
         '''
         This Function downloads the format selected by user. 
 
@@ -44,24 +44,45 @@ class Format:
             raise Exception('Download should be a single Format. Not List(Format)')
         if file_name == None:
             file_name = self.title
-        file_name = self.safe_filename(file_name)
+        if force_filename == False:
+            file_name = self.safe_filename(file_name)
+        else:
+            file_name = file_name
         _,extension = self.mime.split('/')
         if path is None:
             path = os.getcwd()
         final_path = f'{path}\\{file_name}.{extension}'
-        response = requests.get(url, stream = True,headers = headers)
-        total_size_in_bytes= int(response.headers.get('content-length', 0))
-        block_size = 1024
-        bytes_done = 0
-        f = open(final_path, 'wb')
-        for data in response.iter_content(block_size):
-            f.write(data)
-            bytes_done += block_size
-            if onprogress != None:
-                onprogress(bytes_done = bytes_done, total_bytes = total_size_in_bytes)
-        f.close()
         if convert is not None:
-            Convert(final_path,self.category,self.description,convert.split('.')[0])
+            existing_path = final_path.replace(extension,convert)
+        else:
+            existing_path = final_path
+        def start():
+            response = requests.get(url, stream = True,headers = headers)
+            total_size_in_bytes= int(response.headers.get('content-length', 0))
+            block_size = 1024
+            bytes_done = 0
+            f = open(final_path, 'wb')
+            try:
+                for data in response.iter_content(block_size):
+                    f.write(data)
+                    bytes_done += block_size
+                    if onprogress != None:
+                        onprogress(bytes_done = bytes_done, total_bytes = total_size_in_bytes)
+                f.close()
+            except:
+                start()
+            if convert is not None:
+                if os.path.getsize(final_path)*1024 < total_size_in_bytes:
+                    print('Download Error.. Trying Again')
+                    start()
+                Convert(final_path,self.category,self.description,convert.split('.')[0])
+        if skip_existing == False:
+            start()
+        else:
+            if os.path.exists(existing_path) == False:
+                start()
+            else:
+                print('Skipping Files : Existing check is True')
     def __repr__(self):
         return f'<Format : itag={self.itag}, mimeType={self.mime}, size={self.size}, acodec={self.acodec}, vcodec={self.vcodec}, fps={self.fps}, quality={self.quality}, abr={self.abr}, progressive={self.progressive}, adaptive={self.adaptive} >'
 class list_streams:
