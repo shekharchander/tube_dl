@@ -51,6 +51,6 @@ class Caption:
                 lines += 1
             if file_name is not None:
                 file_name = file_name.split('.srt')[0]
-                open(f'{path}/{file_name}.srt','wb').write(srt_text.encode('utf-8'))
+                open(f'{path}' + os.path.sep + f'{file_name}.srt','wb').write(srt_text.encode('utf-8'))
             else:
-                raise Exception('Please provide file name and path to the function')
+                raise Exception('Please provide file name and path to covert_to_srt function')

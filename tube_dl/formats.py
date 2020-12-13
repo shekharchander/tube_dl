@@ -105,8 +105,7 @@ class list_streams:
         itag = None,
         fps = None,
         quality = None,
-        no_audio = None
-        ):
+        no_audio = None):
         content = self.data
         content_list = list()
         for i in content:

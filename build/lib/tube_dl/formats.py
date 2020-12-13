@@ -51,7 +51,7 @@ class Format:
         _,extension = self.mime.split('/')
         if path is None:
             path = os.getcwd()
-        final_path = f'{path}\\{file_name}.{extension}'
+        final_path = f'{path}{os.path.sep}{file_name}.{extension}'
         if convert is not None:
             existing_path = final_path.replace(extension,convert)
         else:
@@ -105,8 +105,7 @@ class list_streams:
         itag = None,
         fps = None,
         quality = None,
-        no_audio = None
-        ):
+        no_audio = None):
         content = self.data
         content_list = list()
         for i in content:
