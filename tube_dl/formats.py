@@ -51,7 +51,7 @@ class Format:
         _,extension = self.mime.split('/')
         if path is None:
             path = os.getcwd()
-        final_path = f'{path}\\{file_name}.{extension}'
+        final_path = f'{path}{os.path.sep}{file_name}.{extension}'
         if convert is not None:
             existing_path = final_path.replace(extension,convert)
         else:
