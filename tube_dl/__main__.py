@@ -149,7 +149,6 @@ class Youtube:
                 if self.algo_js is None:
                     self.algo_js = self.get_js()   
                 signature,url = stream['signatureCipher'].split('&sp=sig&')
-                print(signature)
                 deciphered_signature = Decipher().deciphered_signature(signature = signature.split('s=')[-1].replace('%253D','=').replace('%3D','='),algo_js=self.algo_js)
                 url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
             else:

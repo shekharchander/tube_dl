@@ -21,8 +21,11 @@ class Spotify:
         link = f'https://api.spotify.com/v1/search?type=track&query={query.replace(" ","+")}&limit={limit}'
         data = requests.get(link,headers = headers).json()
         songs_list = list()
-        for i in data['tracks']['items']:
-            songs_list.append(i)
+        try:
+            for i in data['tracks']['items']:
+                songs_list.append(i)
+        except:
+            pass
         return songs_list
 class Convert:
     def __init__(self,filename:str,category,description,extension):
