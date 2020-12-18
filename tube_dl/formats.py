@@ -1,7 +1,7 @@
 import string
 import os
 import requests,time
-from tube_dl.extras import Convert
+from tube_dl.extras import Output
 headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36','referer':'https://youtube.com'}
 class Format:
     def __init__(self,category,description,title,stream_data:dict):
@@ -24,7 +24,7 @@ class Format:
         valid_chars = "-_() %s%s" % (string.ascii_letters, string.digits)
         filename = ''.join(char for char in name if char in valid_chars)
         return filename
-    def download(self, force_filename = False ,onprogress = None, convert:str = None, path = None, file_name = None,skip_existing=False):
+    def download(self, force_filename = False ,onprogress = None, path = None, file_name = None,skip_existing=False):
         '''
         This Function downloads the format selected by user. 
 
@@ -33,8 +33,6 @@ class Format:
                 1. Chunk - The file Chunk
                 2. bytes_done - Total count of bytes done downloading
                 3. total_size - Total size of the file. Extracted from header
-            merge [Coming Soon] : Bool - If True, will download the best quality audio and merge it with the video stream. For this, the download function should have Video File as input
-            convert : Bool - If defined, convert the file to the desired extension without losing important metadata.
             path : Str - Defines the path where to keep the file
             file_name : Str - Defines the file name to be used in the file. To avoid any saving error, function safe_filename will be used to extract the filename without unsafe characters.
         
@@ -52,10 +50,6 @@ class Format:
         if path is None:
             path = os.getcwd()
         final_path = f'{path}{os.path.sep}{file_name}.{extension}'
-        if convert is not None:
-            existing_path = final_path.replace(extension,convert)
-        else:
-            existing_path = final_path
         def start():
             response = requests.get(url, stream = True,headers = headers)
             total_size_in_bytes= int(response.headers.get('content-length', 0))
@@ -71,18 +65,14 @@ class Format:
                 f.close()
             except:
                 start()
-            if convert is not None:
-                if os.path.getsize(final_path)*1024 < total_size_in_bytes:
-                    print('Download Error.. Trying Again')
-                    start()
-                Convert(final_path,self.category,self.description,convert.split('.')[0])
         if skip_existing == False:
             start()
         else:
-            if os.path.exists(existing_path) == False:
+            if os.path.exists(final_path) == False:
                 start()
             else:
                 print('Skipping Files : Existing check is True')
+        return Output(self.description,final_path)
     def __repr__(self):
         return f'<Format : itag={self.itag}, mimeType={self.mime}, size={self.size}, acodec={self.acodec}, vcodec={self.vcodec}, fps={self.fps}, quality={self.quality}, abr={self.abr}, progressive={self.progressive}, adaptive={self.adaptive} >'
 class list_streams:

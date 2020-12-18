@@ -1,9 +1,5 @@
-import requests
-import json
-import html
+from js2py import EvalJs
 import re
-from urllib.parse import unquote
-import js2py
 class Decipher:
     '''
     Returns Deciphered Signature using the Algo provided in the JavaScript File
@@ -39,6 +35,6 @@ class Decipher:
     def deciphered_signature(self,signature = None,algo_js = None):
         #Returns the final deciphered signature by executing the Javascript
         algo_js = algo_js.replace(re.search(r'var output.*?"(.*?)"',algo_js).groups()[0],signature)
-        context = js2py.EvalJs()
+        context = EvalJs()
         context.execute(algo_js)
         return context.output
