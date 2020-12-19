@@ -1,7 +1,7 @@
-![Generic badge](https://img.shields.io/badge/Made%20with-Python-<COLOR>.svg)
+[![Generic badge](https://img.shields.io/badge/Made%20with-Python-<COLOR>.svg)](https://python.org)
 [![GitHub issues](https://img.shields.io/github/issues/shekharchander/tube_dl?color=red)](https://github.com/shekharchander/tube_dl/issues)
 [![PyPI download month](https://img.shields.io/pypi/dm/tube-dl?color=blue)](https://pypi.org/project/tube_dl)
-![GitHub followers](https://img.shields.io/github/followers/shekharchander?label=Follow&style=social)
+[![GitHub followers](https://img.shields.io/github/followers/shekharchander?label=Follow&style=social)](https://github.com/shekharchander)
 
 
 # tube_dl
