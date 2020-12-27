@@ -34,6 +34,8 @@ class Youtube:
         for i in yt_data:
             d=i.keys()
             if 'playerResponse' in d:
+                if 'streamingData' not in i['playerResponse']:
+                    return
                 streamingData=i["playerResponse"]["streamingData"]
                 videoDetails = i["playerResponse"]["videoDetails"]
                 D = i["playerResponse"]["microformat"]["playerMicroformatRenderer"]
@@ -73,19 +75,35 @@ class Youtube:
                     self.views = self.views["runs"][0]["text"].replace(',','').split(" ")[0]
                     self.is_live = True
                 self.likes=re.findall(r"'label': '(.*?) likes'",str(i))[0].replace(',','')
-                self.dislikes=re.findall(r"\{'label': '([0-9\,]*) dislikes'\}",str(i))[0].replace(',','')
+                check = re.findall(r"\{'label': '([0-9\,]*) dislikes'\}",str(i))
+                self.dislikes= 0
+                if len(check):
+                    self.dislikes = check[0].replace(',','')
+                #print(f'self.dislikes = {self.dislikes}\tcheck len = {len(check)}')
+                
             if "videoSecondaryInfoRenderer" in i.keys():
                 i=i["videoSecondaryInfoRenderer"]
                 self.channelThumb=i["owner"]["videoOwnerRenderer"]["thumbnail"]["thumbnails"]
                 self.channelName=i["owner"]["videoOwnerRenderer"]["title"]["runs"][0]["text"]
-                self.subscribers=i["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]["text"].split(' ')[0]
+                #print(i["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"])
+                self.subscribers= 0
+                check = i["owner"]["videoOwnerRenderer"]
+                if 'subscriberCountText' in check.keys():
+                    self.subscribers = check["subscriberCountText"]["runs"][0]["text"].split(' ')[0]
                 self.description="".join([j["text"] for j in i["description"]["runs"]])
                 self.meta = dict()
                 if "rows" in i["metadataRowContainer"]["metadataRowContainerRenderer"]:
                     mD = i["metadataRowContainer"]["metadataRowContainerRenderer"]["rows"]
                     for i in mD:
                         if "metadataRowRenderer" in i.keys():
-                            self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = i["metadataRowRenderer"]["contents"][0]["simpleText"]
+                            contents = i["metadataRowRenderer"]["contents"]
+                            #print(contents)
+                            if 'simpleText' in contents[0]:
+                                self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = i["metadataRowRenderer"]["contents"][0]["simpleText"]
+                            else:
+                                self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = ''
+
+
         self.algo_js = None
         self.formats = list_streams(self.Formats())
     def get_js(self):
