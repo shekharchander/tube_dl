@@ -74,7 +74,10 @@ class Youtube:
                 else:
                     self.views = self.views["runs"][0]["text"].replace(',','').split(" ")[0]
                     self.is_live = True
-                self.likes=re.findall(r"'label': '(.*?) likes'",str(i))[0].replace(',','')
+                check = re.findall(r"'label': '(.*?) likes'",str(i))
+                self.likes = 0
+                if len(check):
+                    self.likes = check[0].replace(',','')
                 check = re.findall(r"\{'label': '([0-9\,]*) dislikes'\}",str(i))
                 self.dislikes= 0
                 if len(check):
