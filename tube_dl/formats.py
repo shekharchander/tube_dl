@@ -45,7 +45,12 @@ class Format:
         if force_filename == False:
             file_name = self.safe_filename(file_name)
         else:
-            file_name = file_name
+            for tok in [':', '"', "'"]:
+                file_name = file_name.replace(tok, '')
+            file_name = file_name.split('|')
+            if len(file_name):
+                file_name = file_name[0]
+            #print(f'file_name = {file_name}')
         _,extension = self.mime.split('/')
         if path is None:
             path = os.getcwd()
