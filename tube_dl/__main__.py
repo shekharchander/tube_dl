@@ -57,7 +57,14 @@ class Youtube:
                 self.hlsUrl = streamingData["hlsManifestUrl"]
             else:
                 self.hlsUrl = None
-        self.title=videoDetails["title"]
+        self.title = videoDetails["title"]
+        title = self.title
+        title = title.split('|')
+        if len(title):
+            title = title[0]
+        regex = re.compile(r'(\[[\w ]*\])|(\([\w ]*\))|[\"\'\:\?\!]', re.MULTILINE)
+        title = re.sub(regex, '', title)
+        self.title = title
         if 'keywords' in videoDetails.keys():
             self.keywords=videoDetails["keywords"]
         else:
