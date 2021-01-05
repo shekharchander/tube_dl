@@ -81,11 +81,14 @@ class Youtube:
                 self.subscribers=i["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]["text"].split(' ')[0]
                 self.description="".join([j["text"] for j in i["description"]["runs"]])
                 self.meta = dict()
-                if "rows" in i["metadataRowContainer"]["metadataRowContainerRenderer"]:
-                    mD = i["metadataRowContainer"]["metadataRowContainerRenderer"]["rows"]
-                    for i in mD:
-                        if "metadataRowRenderer" in i.keys():
-                            self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = i["metadataRowRenderer"]["contents"][0]["simpleText"]
+                try:
+                    if "rows" in i["metadataRowContainer"]["metadataRowContainerRenderer"]:
+                        mD = i["metadataRowContainer"]["metadataRowContainerRenderer"]["rows"]
+                        for i in mD:
+                            if "metadataRowRenderer" in i.keys():
+                                self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = i["metadataRowRenderer"]["contents"][0]["simpleText"]
+                except:
+                    pass
         self.algo_js = None
         self.formats = list_streams(self.Formats())
     def get_js(self):
