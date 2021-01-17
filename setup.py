@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tube_dl",
-    version="4.1.1",
+    version="5.0.0",
     author="Shekhar Chander",
     author_email="shekhar1000.sc@gmail.com",
     description="Another Youtube Video Downloader for Python.",

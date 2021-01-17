@@ -49,18 +49,16 @@ When you use formats, a list of all streams of list_formats class is returned.
 You can print the info or use them anywhere in your code. Here are the list of Information available:
   
    ```python
-   
+  >>> yt.videoID # ID of the video
+  >>> yt.availableCountries #List of countries where video is playable
   >>> yt.title # Returns the title of the video
   >>> yt.views # Return total views
   >>> yt.channelName # Returns the name of the channel
   >>> yt.views # Returns total number of views
   >>> yt.likes # Returns total likes
   >>> yt.dislikes # Returns total dislikes
-  >>> yt.subscribers # Returns no. of subscribers
   >>> yt.meta # Returns the metadata about video (Songs specifically) 
-  >>> yt.channelUrl # Returns url of the channel
-  >>> yt.channelThumb # Thumbnail of channel
-  >>> yt.channelName # Returns name of the channel
+  >>> yt.channelId # Returns url of the channel
   >>> yt.length # Returns the total length of the Youtube Video (in seconds)
   >>> yt.uploadDate # Returns the upload date of the video
   >>> yt.description # Return long description
@@ -70,6 +68,8 @@ You can print the info or use them anywhere in your code. Here are the list of I
   >>> yt.category # Category of the video
   >>> yt.dashUrl # Return dashStreamingUrl (if it is a live video)
   >>> yt.hlsUrl # Return hlsStreamingUrl (if it is a live video) 
+  >>> yt.hashTags # Returns list of hashtags used in a video.
+  >>> yt.subscribers # Return total number of subscribers(Aprroximate)
   ```
 
 ### using filter_by option:

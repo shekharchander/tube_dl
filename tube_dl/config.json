@@ -1,0 +1,5 @@
+{
+    "js": "rw=function(a){a=a.split(\"\");qw.Lv(a,2);qw.dQ(a,77);qw.Lv(a,2);qw.sJ(a,1);qw.sJ(a,8);return a.join(\"\")};var qw={dQ:function(a){a.reverse()},Lv:function(a,b){a.splice(0,b)},sJ:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b%a.length]=c}};var output = rw(\"None\");",
+    "cname": "1",
+    "cver": "2.20210114.08.00"
+}

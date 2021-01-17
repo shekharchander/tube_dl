@@ -1,11 +1,14 @@
-import requests
-import re
+from re import findall
+from requests import get
 from tube_dl.decipher import Decipher
 from tube_dl.formats import Format,list_streams
 from urllib.parse import unquote
+from json import load,dumps
+from os import path
+cwd=path.dirname(path.abspath(__file__))
 headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36','referer':'https://youtube.com'}
 class Youtube:
-    def __init__(self,id):
+    def __init__(self,vid):
         '''
         This class takes the Youtube URL as an argument and then perform regex to get the important data from the HTML file.
     
@@ -16,86 +19,80 @@ class Youtube:
             yt = Youtube('https://youtube.com/watch?v=xhaI-lLiUFA')
 
         '''
-        vid_regex=re.search(r'v=(.*?)&|youtu.be\/(.*?)&',id+'&')
-        if vid_regex is None:
-            vid_id=id
-        else:
-            for i in vid_regex.groups():
-                if i != None:
-                    vid_id=i
-        base_data=requests.get('https://youtube.com/watch?v=1').text
-        self.js_url='https://youtube.com/'+re.findall(r'"jsUrl":"(.*?)"',base_data)[0]
-        headers['x-youtube-client-version']=re.findall(r'"INNERTUBE_CLIENT_VERSION":"(.*?)"',base_data)[0]
-        headers['x-youtube-client-name']='1'
         try:
-            yt_data=requests.get(f'https://youtube.com/watch?v={vid_id}&pbj=1',headers=headers).json()
+            vid="".join([i for i in findall(r"v=(.*?)&|youtu.be\/(.*?)&",vid+"&")[0]])
+        except IndexError as _:
+            vid=vid
+        self.json_file=load(open(cwd+"/config.json","rb"))
+        if self.json_file['js']=='':
+            self.get_js()
+        headers["x-youtube-client-version"]=self.json_file['cver']
+        headers["x-youtube-client-name"]=self.json_file['cname']
+        try:
+            y_data=get(f"https://youtube.com/watch?v={vid}&pbj=1",headers=headers).json()
         except:
-            raise Exception('----------| Not a valid youtube ID |----------')
-        for i in yt_data:
-            d=i.keys()
-            if 'playerResponse' in d:
-                streamingData=i["playerResponse"]["streamingData"]
-                videoDetails = i["playerResponse"]["videoDetails"]
-                D = i["playerResponse"]["microformat"]["playerMicroformatRenderer"]
-                self.thumbnail=D["thumbnail"]["thumbnails"][0]["url"]
-                self.channelUrl = D["ownerProfileUrl"]
-                self.category = D["category"]
-            if 'response' in d:
-                video_info=[i for i in i["response"]["contents"]["twoColumnWatchNextResults"]["results"]["results"]["contents"]]
-        self.formats_data=list()
-        for i in streamingData.keys():
-            if i.startswith('expires') is False and i.startswith('dash') is False and i.startswith('hls') is False:
-                for j in streamingData[i]:
-                    self.formats_data.append(j)
-            if "dashManifestUrl" in i:
-                self.dashUrl = streamingData["dashManifestUrl"]
-            else:
-                self.dashUrl = None
-            if "hlsManifestUrl" in i:
-                self.hlsUrl = streamingData["hlsManifestUrl"]
-            else:
-                self.hlsUrl = None
-        self.title=videoDetails["title"]
-        if 'keywords' in videoDetails.keys():
-            self.keywords=videoDetails["keywords"]
-        else:
-            self.keywords = ''
+            from tube_dl.tdexceptions import VideoError
+            raise VideoError(vid)
+        yt_data=[i for i in y_data if "playerResponse" in i.keys()][0]["playerResponse"]
+        if yt_data["playabilityStatus"]["status"]=="ERROR":
+            from tube_dl.tdexceptions import VideoError
+            raise VideoError(vid)
+        self.streamingData=list()
+        s_data=yt_data["streamingData"]
+        videoDetails=yt_data["videoDetails"]
+        self.title=videoDetails['title']
+        self.keywords=videoDetails["keywords"]
         self.length=videoDetails["lengthSeconds"]
-        self.uploadDate = D["uploadDate"]
-        for i in video_info:
-            if "videoPrimaryInfoRenderer" in i.keys():
-                i=i["videoPrimaryInfoRenderer"]
-                self.views = i["viewCount"]["videoViewCountRenderer"]["viewCount"]
-                if "simpleText" in self.views.keys():
-                    self.views=self.views["simpleText"].replace(',','')
-                    self.is_live = False
-                else:
-                    self.views = self.views["runs"][0]["text"].replace(',','').split(" ")[0]
-                    self.is_live = True
-                self.likes=re.findall(r"'label': '(.*?) likes'",str(i))[0].replace(',','')
-                self.dislikes=re.findall(r"\{'label': '([0-9\,]*) dislikes'\}",str(i))[0].replace(',','')
-            if "videoSecondaryInfoRenderer" in i.keys():
-                i=i["videoSecondaryInfoRenderer"]
-                self.channelThumb=i["owner"]["videoOwnerRenderer"]["thumbnail"]["thumbnails"]
-                self.channelName=i["owner"]["videoOwnerRenderer"]["title"]["runs"][0]["text"]
-                self.subscribers=i["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]["text"].split(' ')[0]
-                self.description="".join([j["text"] for j in i["description"]["runs"]])
-                self.meta = dict()
-                try:
-                    if "rows" in i["metadataRowContainer"]["metadataRowContainerRenderer"]:
-                        mD = i["metadataRowContainer"]["metadataRowContainerRenderer"]["rows"]
-                        for i in mD:
-                            if "metadataRowRenderer" in i.keys():
-                                self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = i["metadataRowRenderer"]["contents"][0]["simpleText"]
-                except:
-                    pass
-        self.algo_js = None
+        self.channelName=videoDetails["author"]
+        self.channeId=videoDetails["channelId"]
+        self.isLive=videoDetails["isLiveContent"]
+        self.views=videoDetails["viewCount"]
+        self.videoId=videoDetails["videoId"]
+        self.thumbnail=videoDetails["thumbnail"]["thumbnails"][-1]["url"]
+        extraDetails=yt_data['microformat']['playerMicroformatRenderer']
+        self.availableCountries=extraDetails['availableCountries']
+        self.category=extraDetails['category']
+        self.description=extraDetails['description']["runs"][0]
+        self.subscribers=extraDetails["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]
+        del yt_data
+        extraDetails=[i for i in y_data if "response" in i.keys()][0]["response"]["contents"]["twoColumnWatchNextResults"]["results"]["results"]["contents"][0]["videoPrimaryInfoRenderer"]
+        self.likes,self.dislikes=[i.strip() for i in extraDetails["sentimentBar"]["sentimentBarRenderer"]["tooltip"].split('/')]
+        self.uploadDate=extraDetails["dateText"]["simpleText"].split(' ')[-1]
+        try:
+            self.hashTags=[i["text"] for i in extraDetails['superTitleLink']["runs"] if i["text"]!=' ']
+        except:
+            self.hashTags=None
+        try:
+            mD=[i for i in y_data if "response" in i.keys()][0]["response"]["contents"]["twoColumnWatchNextResults"]["results"]["results"]["contents"][0]["videoSecondaryInfoRenderer"]["metadataRowContainer"]["metadataRowContainerRenderer"]["rows"]
+            for i in mD:
+                if "metadataRowRenderer" in i.keys():
+                    self.meta[i["metadataRowRenderer"]["title"]["simpleText"]] = i["metadataRowRenderer"]["contents"][0]["simpleText"]
+        except:
+            self.meta=dict()
+        if self.isLive=='true':
+            try:
+                self.hlsUrl=s_data["hlsManifestUrl"]
+            except:
+                self.hlsUrl=None
+            try:
+                self.dashUrl=s_data["dashManifestUrl"]
+            except:
+                self.dashUrl=None
+            self.streamingData=[]
+        else:
+            for i in s_data.keys():
+                if i!='expiresInSeconds':
+                    for k in s_data[i]:
+                        self.streamingData.append(k)
         self.formats = list_streams(self.Formats())
     def get_js(self):
-        js_file = requests.get(self.js_url).text
+        base_data=get('https://youtube.com/watch?v=1').text
+        js_url='https://youtube.com/'+findall(r'"jsUrl":"(.*?)"',base_data)[0]
+        js_file = get(js_url).text
         data = Decipher(js_file,process=True).get_full_function()
+        self.json_file['js']=data
+        open(cwd+'/config.json','w').write(dumps(self.json_file))
         return data
-    
     def Formats(self):
         '''
         Returns:
@@ -105,7 +102,8 @@ class Youtube:
             List(streams_objects)
         '''
         fmt = list()
-        for stream in self.formats_data:
+        js_passed=False
+        for stream in self.streamingData:
             itag = stream["itag"]
             Mime,Codecs = stream["mimeType"].replace("'",'').split(';')
             Codecs = Codecs.split('=')[-1].replace(' ','').split(',')
@@ -129,11 +127,20 @@ class Youtube:
             except:
                 abr = stream["bitrate"]
             if 'signatureCipher' in stream.keys():
-                if self.algo_js is None:
-                    self.algo_js = self.get_js()   
                 signature,url = stream["signatureCipher"].split('&sp=sig&')
-                deciphered_signature = Decipher().deciphered_signature(signature = signature.split('s=')[-1].replace('%253D','=').replace('%3D','='),algo_js=self.algo_js)
+                deciphered_signature = Decipher().deciphered_signature(signature = signature.replace('s=','',1).replace('%253D','=').replace('%3D','='),algo_js=self.json_file['js'])
                 url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
+                if js_passed==False:
+                    try:
+                        if get(url,timeout=4,stream=True).status_code!=200:
+                            self.get_js
+                            deciphered_signature = Decipher().deciphered_signature(signature = signature.replace('s=','',1).replace('%253D','=').replace('%3D','='),algo_js=self.json_file['js'])
+                            url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
+                    except:
+                        self.get_js()
+                        deciphered_signature = Decipher().deciphered_signature(signature = signature.replace('s=','',1).replace('%253D','=').replace('%3D','='),algo_js=self.json_file['js'])
+                        url = unquote(url).split('=',1)[1]+'&sig='+deciphered_signature
+                    js_passed=True
             else:
                 url = stream["url"].replace('\\u0026','&')
             try:
@@ -153,7 +160,6 @@ class Youtube:
             fmt.append(Format(self.category,description,self.title,{'itag':itag,'mimeType':Mime,'vcodec':vcodec,'acodec':acodec,'fps':fps,'abr':abr,'quality':quality,'url':url,'size':size,'adaptive':adaptive,'progressive':progressive}))
         return fmt
 class Playlist:
-    
     def __init__(self,url:str,start:int = None,end:int = None):
         '''
         This Class is responsible for:
@@ -169,18 +175,19 @@ class Playlist:
             Tuple : All the Video IDs within the Range variable( if Defined)
         '''
         headers['referer'] = url
-        url = 'https://youtube.com/playlist?'+re.search(r'(list=.*?)&',url+'&').groups()[0]
-        html = unquote(requests.get(url.replace('music.',''),headers = headers).text)
+        url = 'https://youtube.com/playlist?'+findall(r'(list=.*?)&',url+'&')[0]
+        html = unquote(get(url.replace('music.',''),headers = headers).text)
         regex = r'playlistVideoRenderer":\{"videoId":"(.*?)"'
-        self.IDs = re.findall(regex,html)
+        self.IDs = findall(regex,html)
         if len(self.IDs) == 0:
-            raise  Exception('Not a Youtube Playlist.')
+            from tube_dl.tdexceptions import PlaylistError
+            raise  PlaylistError(url)
         try:
-            total_count = int(re.search(r'"text":"([0-9]*)"',html).groups()[0])
+            total_count = int(findall(r'"text":"([0-9]*)"',html)[0])
         except:
-            total_count = int(re.search(r'"stats":\[\{"runs":\[\{"text":"(.*?)"\}',html).groups()[0].replace(',',''))
-        self.Api_key = re.search(r'"innertubeApiKey":"(.*?)"',html).groups()[0]
-        self.version = re.search(r'"INNERTUBE_CONTEXT_CLIENT_VERSION":"(.*?)"',html).groups()[0]
+            total_count = int(findall(r'"stats":\[\{"runs":\[\{"text":"(.*?)"\}',html)[0].replace(',',''))
+        self.Api_key = findall(r'"innertubeApiKey":"(.*?)"',html)[0]
+        self.version = findall(r'"INNERTUBE_CONTEXT_CLIENT_VERSION":"(.*?)"',html)[0]
         if total_count > 100:
             for _ in range(0,total_count//100):
                 self.fetch_continuation(html)
@@ -199,11 +206,11 @@ class Playlist:
         If there are more than 100 videos in a playlist, Youtube shows them in sets of 100 each.
         This set of code uses the continuation URL and appends it regex match to the IDs variable.
         '''
-        regex = r'"continuationCommand":{"token":"(.*?)"'
-        Token = re.search(regex,html).groups()[0]
+        from requests import post
+        Token = findall(r'"continuationCommand":{"token":"(.*?)"',html)[0]
         url, payload = self.get_continuation_data(Token)
-        data = requests.post(url,json = payload,headers = headers).text.replace(' ','').replace('\n','')
-        for i in re.findall(r'"videoId":"(.*?)"',data):
+        data = post(url,json = payload,headers = headers).text.replace(' ','').replace('\n','')
+        for i in findall(r'"videoId":"(.*?)"',data):
             if i not in self.IDs:
                 self.IDs.append(i)
     def get_continuation_data(self,Token):
