@@ -61,15 +61,15 @@ You can print the info or use them anywhere in your code. Here are the list of I
   >>> yt.channelId # Returns url of the channel
   >>> yt.length # Returns the total length of the Youtube Video (in seconds)
   >>> yt.uploadDate # Returns the upload date of the video
-  >>> yt.description # Return long description
+  >>> yt.description # Returns long description
   >>> yt.keywords # Returns list of keywords if available
-  >>> yt.is_live # Return True if format is a live stream
+  >>> yt.is_live # Returns True if format is a live stream
   >>> yt.thumbnail # Returns thumbnail URL
   >>> yt.category # Category of the video
-  >>> yt.dashUrl # Return dashStreamingUrl (if it is a live video)
-  >>> yt.hlsUrl # Return hlsStreamingUrl (if it is a live video) 
+  >>> yt.dashUrl # Returns dashStreamingUrl (if it is a live video)
+  >>> yt.hlsUrl # Returns hlsStreamingUrl (if it is a live video) 
   >>> yt.hashTags # Returns list of hashtags used in a video.
-  >>> yt.subscribers # Return total number of subscribers(Aprroximate)
+  >>> yt.subscribers # Returns total number of subscribers(Aprroximate)
   ```
 
 ### using filter_by option:
