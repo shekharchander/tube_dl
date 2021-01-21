@@ -70,6 +70,7 @@ class Comments:
         Returns:list()
         list of Dict of comment, like, owner name, owner thumbnail and owner url
         '''
+        continuation=''
         if count is None:
             end_range = self.page_count
             count = self.comment_count

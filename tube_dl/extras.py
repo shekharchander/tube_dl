@@ -1,14 +1,10 @@
 import requests
 import re
-import subprocess
 try:
     import moviepy.editor as converter
     import eyed3
-except:
-    subprocess.call('pip install moviepy')
-    subprocess.call('pip install eyed3')
-    import moviepy.editor as converter
-    import eyed3
+except ModuleNotFoundError as e:    
+    print(e)
 import os
 headers = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
