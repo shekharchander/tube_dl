@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/shekharchander/tube_dl",
     packages=setuptools.find_packages(),
-    install_requires=["requests","js2py"],
+    install_requires=["requests", "js2py"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
