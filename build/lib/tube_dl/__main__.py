@@ -29,14 +29,14 @@ class Youtube:
         except IndexError:
             vid = vid
         try:
-            self.json_file = load(open(cwd+"/config.json", "rb"))
+            self.json_file = load(open(cwd+"/tube_dl_config.json", "rb"))
         except FileNotFoundError:
-            open(cwd+"/config.json", "wb").write('''{
+            open(cwd+"/tube_dl_config.json", "wb").write('''{
     "js": "rw=function(a){a=a.split(\\"\\");qw.Lv(a,2);qw.dQ(a,77);qw.Lv(a,2);qw.sJ(a,1);qw.sJ(a,8);return a.join(\\"\\")};var qw={dQ:function(a){a.reverse()},Lv:function(a,b){a.splice(0,b)},sJ:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b%a.length]=c}};var output = rw(\\"None\\");",
     "cname": "1",
     "cver": "2.20210114.08.00"
 }'''.encode())
-            self.json_file = load(open(cwd+"/config.json", "rb"))
+            self.json_file = load(open(cwd+"/tube_dl_config.json", "rb"))
         if self.json_file['js'] == '':
             self.get_js()
         headers["x-youtube-client-version"] = self.json_file['cver']
@@ -66,7 +66,10 @@ class Youtube:
         self.availableCountries = extraDetails['availableCountries']
         self.category = extraDetails['category']
         extraDetails = [i for i in y_data if "response" in i.keys()][0]["response"]["contents"]["twoColumnWatchNextResults"]["results"]["results"]["contents"]
-        self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]
+        try:
+            self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]
+        except:
+            self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["simpleText"]
         self.description = ''.join([i["text"] for i in extraDetails[1]['videoSecondaryInfoRenderer']['description']["runs"]])
         extraDetails = extraDetails[0]["videoPrimaryInfoRenderer"]
         self.likes, self.dislikes = [i.strip() for i in extraDetails["sentimentBar"]["sentimentBarRenderer"]["tooltip"].split('/')]
@@ -105,7 +108,7 @@ class Youtube:
         js_file = get(js_url).text
         data = Decipher(js_file, process=True).get_full_function()
         self.json_file['js'] = data
-        open(cwd+'/config.json', 'w').write(dumps(self.json_file))
+        open(cwd+'/tube_dl_config.json', 'w').write(dumps(self.json_file))
         return data
 
     def Formats(self):

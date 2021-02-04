@@ -1,0 +1,1 @@
+{"js": "Dw=function(a){a=a.split(\"\");Cw.Hi(a,2);Cw.af(a,41);Cw.Hi(a,1);return a.join(\"\")};var Cw={Ta:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b%a.length]=c},af:function(a){a.reverse()},Hi:function(a,b){a.splice(0,b)}};var output = Dw(\"None\");", "cname": "1", "cver": "2.20210114.08.00"}
