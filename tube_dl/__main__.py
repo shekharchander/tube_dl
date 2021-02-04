@@ -69,7 +69,7 @@ class Youtube:
         try:
             self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["runs"][0]
         except:
-            self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["simpleText"]
+            self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["simpleText"].replace(",","")
         self.description = ''.join([i["text"] for i in extraDetails[1]['videoSecondaryInfoRenderer']['description']["runs"]])
         extraDetails = extraDetails[0]["videoPrimaryInfoRenderer"]
         self.likes, self.dislikes = [i.strip() for i in extraDetails["sentimentBar"]["sentimentBarRenderer"]["tooltip"].split('/')]
