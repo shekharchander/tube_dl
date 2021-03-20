@@ -145,22 +145,22 @@ class Youtube:
             except Exception:
                 abr = stream["bitrate"]
             if 'signatureCipher' in stream.keys():
-                signature, url = stream["signatureCipher"].split('&sp=sig&')
+                signature, url = stream["signatureCipher"].split('&sp=sig&url=')
                 signature = signature.replace('s=', '', 1).replace('%253D', '=').replace('%3D', '=')
                 deciphered_signature = Decipher().deciphered_signature(
                     signature, algo_js=self.json_file['js']
                     )
-                url = unquote(url).split('=', 1)[1]+'&sig='+deciphered_signature
+                url = unquote(url)+'&sig='+deciphered_signature
                 if js_passed is False:
                     try:
                         if get(url, timeout=4, stream=True).status_code != 200:
                             self.get_js
                             deciphered_signature = Decipher().deciphered_signature(signature, algo_js=self.json_file['js'])
-                            url = unquote(url).split('=', 1)[1]+'&sig=' + deciphered_signature
+                            url = unquote(url)+'&sig=' + deciphered_signature
                     except Exception:
                         self.get_js()
                         deciphered_signature = Decipher().deciphered_signature(signature, algo_js=self.json_file['js'])
-                        url = unquote(url).split('=', 1)[1]+'&sig=' + deciphered_signature
+                        url = unquote(url)+'&sig=' + deciphered_signature
                     js_passed = True
             else:
                 url = stream["url"].replace('\\u0026', '&')
