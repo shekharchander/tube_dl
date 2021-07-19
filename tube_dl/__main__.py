@@ -54,7 +54,10 @@ class Youtube:
         s_data = yt_data["streamingData"]
         videoDetails = yt_data["videoDetails"]
         self.title = videoDetails['title']
-        self.keywords = videoDetails["keywords"]
+        try:
+            self.keywords = videoDetails["keywords"]
+        except:
+            self.keywords = None
         self.length = videoDetails["lengthSeconds"]
         self.channelName = videoDetails["author"]
         self.channeId = videoDetails["channelId"]
