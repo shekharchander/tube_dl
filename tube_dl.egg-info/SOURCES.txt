@@ -1,3 +1,4 @@
+LICENSE
 README.md
 setup.py
 tube_dl/__init__.py
