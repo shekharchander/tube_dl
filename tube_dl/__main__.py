@@ -50,7 +50,10 @@ class Youtube:
         s_data = yt_data["streamingData"]
         videoDetails = yt_data["videoDetails"]
         self.title = videoDetails['title']
-        self.keywords = videoDetails["keywords"]
+        try:
+            self.keywords = videoDetails["keywords"]
+        except:
+            self.keywords = []
         self.length = videoDetails["lengthSeconds"]
         self.channelName = videoDetails["author"]
         self.channeId = videoDetails["channelId"]
@@ -237,6 +240,7 @@ class Playlist:
         for i in findall(r'"videoId":"(.*?)"', data):
             if i not in self.IDs:
                 self.IDs.append(i)
+        return data
 
     def get_continuation_data(self, Token):
         '''
