@@ -31,11 +31,7 @@ class Youtube:
         try:
             self.json_file = load(open(cwd+"/tube_dl_config.json", "rb"))
         except FileNotFoundError:
-            open(cwd+"/tube_dl_config.json", "wb").write('''{
-    "js": "rw=function(a){a=a.split(\\"\\");qw.Lv(a,2);qw.dQ(a,77);qw.Lv(a,2);qw.sJ(a,1);qw.sJ(a,8);return a.join(\\"\\")};var qw={dQ:function(a){a.reverse()},Lv:function(a,b){a.splice(0,b)},sJ:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b%a.length]=c}};var output = rw(\\"None\\");",
-    "cname": "1",
-    "cver": "2.20210114.08.00"
-}'''.encode())
+            self.get_js()
             self.json_file = load(open(cwd+"/tube_dl_config.json", "rb"))
         if self.json_file['js'] == '':
             self.get_js()
@@ -54,10 +50,7 @@ class Youtube:
         s_data = yt_data["streamingData"]
         videoDetails = yt_data["videoDetails"]
         self.title = videoDetails['title']
-        try:
-            self.keywords = videoDetails["keywords"]
-        except:
-            self.keywords = None
+        self.keywords = videoDetails["keywords"]
         self.length = videoDetails["lengthSeconds"]
         self.channelName = videoDetails["author"]
         self.channeId = videoDetails["channelId"]
@@ -75,7 +68,10 @@ class Youtube:
             self.subscribers = extraDetails[1]['videoSecondaryInfoRenderer']["owner"]["videoOwnerRenderer"]["subscriberCountText"]["simpleText"].replace(",","")
         self.description = ''.join([i["text"] for i in extraDetails[1]['videoSecondaryInfoRenderer']['description']["runs"]])
         extraDetails = extraDetails[0]["videoPrimaryInfoRenderer"]
-        self.likes, self.dislikes = [i.strip() for i in extraDetails["sentimentBar"]["sentimentBarRenderer"]["tooltip"].split('/')]
+        try:
+            self.likes, self.dislikes = [i.strip() for i in extraDetails["sentimentBar"]["sentimentBarRenderer"]["tooltip"].split('/')]
+        except:
+            self.likes,self.dislikes = [0,0]
         self.uploadDate = extraDetails["dateText"]["simpleText"].split(' ')[-1]
         try:
             self.hashTags = [i["text"] for i in extraDetails['superTitleLink']["runs"] if i["text"] != ' ']
@@ -149,7 +145,7 @@ class Youtube:
                 abr = stream["bitrate"]
             if 'signatureCipher' in stream.keys():
                 signature, url = stream["signatureCipher"].split('&sp=sig&url=')
-                signature = signature.replace('s=', '', 1).replace('%253D', '=').replace('%3D', '=')
+                signature = signature.replace("s=",'',1).replace('%253D', '%3D').replace('%3D', '=')
                 deciphered_signature = Decipher().deciphered_signature(
                     signature, algo_js=self.json_file['js']
                     )
@@ -157,7 +153,7 @@ class Youtube:
                 if js_passed is False:
                     try:
                         if get(url, timeout=4, stream=True).status_code != 200:
-                            self.get_js
+                            self.get_js()
                             deciphered_signature = Decipher().deciphered_signature(signature, algo_js=self.json_file['js'])
                             url = unquote(url)+'&sig=' + deciphered_signature
                     except Exception:
